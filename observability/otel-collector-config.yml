@@ -1,0 +1,45 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+        include_metadata: true
+        cors:
+          allowed_origins: [ "https://*.klym.com", "http://*.klym.com" ]
+          allowed_headers: [ "*" ]
+          max_age: 7200
+
+exporters:
+  logging:
+    verbosity: detailed
+
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
+    namespace: "prometheus"
+    tls:
+      insecure: true
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  zipkin:
+    endpoint: "http://zipkin:9411/api/v2/spans"
+
+  awsxray:
+    region: "us-east-1"
+    telemetry:
+      enabled: true
+      include_metadata: true
+
+processors:
+  batch:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [logging, awsxray, zipkin]
+      processors: [batch]
+    metrics:
+      receivers: [otlp]
+      exporters: [logging, prometheusremotewrite]
+      processors: [batch]
